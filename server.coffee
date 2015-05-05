@@ -1,55 +1,48 @@
+Timer = require 'timer'
+Plugin = require 'plugin'
 Db = require 'db'
 
 exports.onInstall = ->
 	# set the counter to 0 on plugin installation
-	Db.shared.set 'counter', 0
-
-# exported functions prefixed with 'client_' are callable by our client code using `Server.call`
-exports.client_incr = ->
-	log 'hello world!' # write to the plugin's log
-	Db.shared.modify 'counter', (v) -> v+1
-
-exports.client_getTime = (cb) ->
-	cb.reply new Date()
-
-exports.onHttp = (request) ->
-	# special entrypoint for the Http API: called whenever a request is made to our plugin's inbound URL
-	Db.shared.set 'http', data
-	request.respond 200, "Thanks for your input\n"
-
-exports.client_fetchHn = ->
-	Http = require 'http'
-	Http.get
-		url: 'https://news.ycombinator.com'
-		name: 'hnResponse' # corresponds to exports.hnResponse below
-
-exports.hnResponse = (data) !->
-	# called when the Http API has the result for the above request
+	Db.shared.set 'story', ""
 	
-	re = /<a href="(http[^"]+)">([^<]+)<\/a>/g
-	# regex to find urls/titles in html
+	#Get a random user
+	min = 1
+	max = Plugin.userIds().length
+	id = Math.random() * (max - min) + min
+	log "Random user Id is " + id
+	Db.shared.set 'userId', Plugin.userIds()[0]
+	
+exports.client_getTimeLeft = (cb) ->
+	cb.reply new Date() + 1000
+	
+exports.client_addWord = (uid, word) ->
+	log "AddWord params: " + Plugin.userName(uid) + "-"+ uid + " " + word
+	
+	dbId = Db.shared.get 'userId'
+	
+	log "userId vs uid:" + uid + " vs " + dbId
+	
+	if dbId == uid
+		#If the string is all spaces, return early		
+		newWord = word.replace /^\s+|\s+$/g, ""
+		#Make it lowerCase
+		newWord = newWord.toLowerCase()
+		#TODO: Make word capitalized if its after a period.
+		if Db.shared.get 'story'.length == 0		
+			newWord[0].toUpperCase()		
 
-	id = 1
-	while id < 5 and m = re.exec(data)
-		[all, url, title] = m
-		log 'hn headline', title, url
-		continue if url is 'http://www.ycombinator.com' # header link
-		Db.shared.set 'hn', id,
-			title: title
-			url: url
-		id++
-
-exports.onPhoto = (info) !->
-	# entrypoint when a photo is uploaded by the plugin
-	log 'onPhoto', JSON.stringify(info)
-	Db.shared.set 'photo', info.key
-
-exports.client_event = !->
-	# send push event to all group members
-	Event = require 'event'
-	Event.create
-		text: "Test event"
-		# sender: Plugin.userId() # prevent push (but bubble) to sender
-		# for: [1, 2] # to only include group members 1 and 2
-		# for: [-3] # to exclude group member 3
-		# for: ['admin', 2] # to group admins and member 2
+		#Only get first word if multiple get in
+		newWord = newWord.split(" ")[0]	
+		id = dbId 
+		id += 1		
+		if id > Plugin.userIds().length
+			#Back to first id (1)
+			id = 1
+		
+		log "Next player should be: " + Plugin.userName(id)
+		Db.shared.set 'userId', id
+		Db.shared.modify 'story', (v) -> v + " " + newWord
+	
+exports.client_deleteStory = ->
+	Db.shared.set 'story', ""
