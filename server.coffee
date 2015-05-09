@@ -1,20 +1,47 @@
 Timer = require 'timer'
 Plugin = require 'plugin'
+Event = require 'event'
 Db = require 'db'
 
+exports.getTitle = -> # prevents title input from showing up when adding the plugin
+
 exports.onInstall = ->
-	# set the counter to 0 on plugin installation
-	Db.shared.set 'story', ""
-	
+	Db.shared.set 'story', ""	
 	#Get a random user
 	min = 1
-	max = Plugin.userIds().length
-	id = Math.random() * (max - min) + min
+	max = Plugin.userIds().length 
+	id = Math.floor(Math.random() * (max - min) + min)
 	log "Random user Id is " + id
-	Db.shared.set 'userId', Plugin.userIds()[0]
+	Db.shared.set 'userId', id
 	
+	#2 hours waiting time should be enough for each word
+	exports.resetTimer()	
+
+exports.onUpgrade = ->
+	exports.nextPlayer()
+	
+exports.resetTimer = ->
+	nextTime = (2 * 1000 * 60 * 60)
+	Db.shared.set 'next', nextTime
+	Timer.set nextTime, 'expire'
+
+exports.nextPlayer = ->
+	id = Db.shared.get 'userId' 
+	id += 1		
+	if id > Plugin.userIds().length
+		#Back to first id (1)
+		id = 1
+
+	log "Next player should be: " + Plugin.userName(id)
+	Db.shared.set 'userId', id
+	exports.resetTimer()
+
+exports.expire = ->
+	#Waited too long, new player
+	exports.nextPlayer()
+
 exports.client_getTimeLeft = (cb) ->
-	cb.reply new Date() + 1000
+	cb.reply Db.shared.set 'timeLeft'
 	
 exports.client_addWord = (uid, word) ->
 	log "AddWord params: " + Plugin.userName(uid) + "-"+ uid + " " + word
@@ -30,19 +57,16 @@ exports.client_addWord = (uid, word) ->
 		newWord = newWord.toLowerCase()
 		#TODO: Make word capitalized if its after a period.
 		if Db.shared.get 'story'.length == 0		
-			newWord[0].toUpperCase()		
-
+			newWord = newWord[0].toUpperCase() + newWord.substring(1)
+			
 		#Only get first word if multiple get in
 		newWord = newWord.split(" ")[0]	
-		id = dbId 
-		id += 1		
-		if id > Plugin.userIds().length
-			#Back to first id (1)
-			id = 1
+
+		exports.nextPlayer()
 		
-		log "Next player should be: " + Plugin.userName(id)
-		Db.shared.set 'userId', id
 		Db.shared.modify 'story', (v) -> v + " " + newWord
+		Event.create
+			text: "The word '" + newWord + "' has been added!"
 	
 exports.client_deleteStory = ->
 	Db.shared.set 'story', ""

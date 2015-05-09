@@ -7,7 +7,9 @@ Server = require 'server'
 Page = require 'page'
 Plugin = require 'plugin'
 Obs = require 'obs'
+Time = require 'time'
 {tr} = require 'i18n'
+Social = require 'social'
 
 curUserId = Plugin.userId()
 	
@@ -16,9 +18,8 @@ exports.render = !->
 	renderMain()
 
 renderMain = ->
-    Page.setTitle("Word Story")
+	Page.setTitle("Word Story")
 
-	
 	#Story header
 	Dom.section ->
 		Dom.div ->
@@ -26,7 +27,7 @@ renderMain = ->
 				textAlign: 'center'	
 			Dom.h1 tr("The story of " + Plugin.groupName())
 			Dom.text  Db.shared.get('story')	
-
+	
 	#Whose turn is it
 	Dom.div !-> 
 		Dom.style
@@ -34,13 +35,14 @@ renderMain = ->
 		Ui.avatar Plugin.userAvatar(Db.shared.get('userId'))
 		Dom.text tr("'s turn")
 	
-	#Time Remaining
-	Dom.div !-> 
-		Dom.style
-			textAlign: 'right'
-		Dom.text Db.shared.get('time') + " remaining"
-	
-	
+	Obs.observe !->
+		#Time stuff here
+		Dom.div !-> 
+			Dom.style
+				textAlign: 'right'
+			Dom.text "This timer is broken. Will fix later. Turns are 2 hours each. "
+			Time.deltaText(Plugin.timeDb.shared.get 'next') 
+			
 	#Time Remaining
 	Dom.div ->
 		Dom.style 
@@ -55,3 +57,5 @@ renderMain = ->
 #	if Plugin.userIsAdmin()
 #		Ui.button "Delete Story", !->
 #			Server.call 'deleteStory'
+
+	require('social').renderComments()
