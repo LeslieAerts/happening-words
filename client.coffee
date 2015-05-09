@@ -53,8 +53,8 @@ renderMain = ->
 			Ui.button tr("Add"), !->
 				Server.call 'addWord', curUserId, word.value()
 				word.value("")
-	if Plugin.userIsAdmin()
-		Ui.button "Delete Story", !->
-			Server.call 'deleteStory'
+#	if Plugin.userIsAdmin()
+#		Ui.button "Delete Story", !->
+#			Server.call 'deleteStory'
 
 	require('social').renderComments()

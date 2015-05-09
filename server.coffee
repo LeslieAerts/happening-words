@@ -72,7 +72,7 @@ exports.client_addWord = (uid, word) ->
 		if story.length == 0		
 			newWord = newWord[0].toUpperCase() + newWord.substring(1)
 			
-		if story[story.length-1] == "."
+		if (story[story.length-1] == ".") || (story[story.length-1] == "?") || (story[story.length-1] == "!")
 			newWord = newWord[0].toUpperCase() + newWord.substring(1)	
 			
 		#Only get first word if multiple get in
