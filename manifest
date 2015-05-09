@@ -1,3 +1,4 @@
-name: Words
+name: Word Story Game
 description: Each member gets to add one single word at a time and create a beautiful, funny or cool story, together!
 api: 2
+icon:pen

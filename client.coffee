@@ -40,10 +40,9 @@ renderMain = ->
 		Dom.div !-> 
 			Dom.style
 				textAlign: 'right'
-			Dom.text "This timer is broken. Will fix later. Turns are 2 hours each. "
-			Time.deltaText(Plugin.timeDb.shared.get 'next') 
+			Dom.text "Turn ends "
+			Time.deltaText(Db.shared.get('next')) 
 			
-	#Time Remaining
 	Dom.div ->
 		Dom.style 
 			textAlign: 'right'	
@@ -54,8 +53,8 @@ renderMain = ->
 			Ui.button tr("Add"), !->
 				Server.call 'addWord', curUserId, word.value()
 				word.value("")
-#	if Plugin.userIsAdmin()
-#		Ui.button "Delete Story", !->
-#			Server.call 'deleteStory'
+	if Plugin.userIsAdmin()
+		Ui.button "Delete Story", !->
+			Server.call 'deleteStory'
 
 	require('social').renderComments()
